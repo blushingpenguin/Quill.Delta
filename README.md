@@ -23,7 +23,7 @@ Quill.Delta can also be installed from [nuget.org](https://www.nuget.org/package
 
 ## Usage ##
 
-```c#
+```csharp
 using Quill.Delta;
 using Newtonsoft.Json.Linq;
 
@@ -115,7 +115,7 @@ If you are rendering to HTML that you intend to include in an email, using class
 
 You can customize styles by setting the properties of the `InlineStyles` object:
 
-```c#
+```csharp
 var fontDic = new Dictionary<string, string>() {
     { "serif": "font-family: Georgia, Times New Roman, serif" },
     { "monospace": "font-family: Monaco, Courier New, monospace" }
@@ -157,7 +157,7 @@ If you would like your custom blot to be rendered as a block (not inside another
 
 Example:
 
-```c#
+```csharp
 using Newtonsoft.Json.Linq;
 using Quill.Delta;
 
@@ -208,7 +208,7 @@ string html = converter.Convert();
 If you want to do the full rendering yourself, you can do so
 by getting the processed & grouped ops.
 
-```c#
+```csharp
 var groupedOps = converter.GetGroupedOps();
 ```
 
