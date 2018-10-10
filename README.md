@@ -171,7 +171,7 @@ var opts = new HtmlConverterOptions
     // contextOp is the block op that wraps this op, if any.
     // If, for example, your custom blot is located inside a list item,
     // then contextOp would provide that op.
-    CustomRenderer = (op: DeltaOp, contextOp: DeltaOp)
+    CustomRenderer = (DeltaInsertOp op, DeltaInsertOp contextOp)
     {
         var insert = (InsertDataCustom)op.Insert;
         if (insert.CustomType == "my-blot")
@@ -217,16 +217,16 @@ following types:
 
 |type|properties|
 |---|---|
-|`InlineGroup`|Ops: `IList<DeltaOp>`|
-|`VideoItem`|Op: `DeltaOp`|
-|`BlockGroup`|Op: `DeltaOp`, Ops: `IList<DeltaOp>`|
+|`InlineGroup`|Ops: `IList<DeltaInsertOp>`|
+|`VideoItem`|Op: `DeltaInsertOp`|
+|`BlockGroup`|Op: `DeltaInsertOp`, Ops: `IList<DeltaInsertOp>`|
 |`ListGroup`|Items: `IList<ListItem>`|
 ||ListItem: { Item: `BlockGroup`, InnerList: `ListGroup` }|
-|`BlotBlock`|Op: `DeltaOp`|
+|`BlotBlock`|Op: `DeltaInsertOp`|
 
 `BlotBlock` represents custom blots with `renderAsBlock:true` property pair in its attributes
 
-See above for `DeltaOp` properties.
+See above for `DeltaInsertOp` properties.
 
 ## Local Development ##
 
