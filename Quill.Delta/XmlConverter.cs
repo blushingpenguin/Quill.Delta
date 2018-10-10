@@ -6,18 +6,14 @@ using System.Xml;
 
 namespace Quill.Delta
 {
-    public class QuillDeltaToXmlConverter
+    public class XmlConverter : Converter
     {
-        QuillDeltaToXmlConverterOptions _options;
-        JArray _rawOps;
         OpToXmlConverterOptions _converterOptions;
         internal XmlDocument _document;
 
-        public QuillDeltaToXmlConverter(JArray ops, QuillDeltaToXmlConverterOptions options = null)
+        public XmlConverter(JArray ops, XmlConverterOptions options = null) :
+            base(ops, options ?? new XmlConverterOptions())
         {
-            _options = options ?? new QuillDeltaToXmlConverterOptions();
-            _rawOps = ops;
-
             _converterOptions = new OpToXmlConverterOptions()
             {
                 ClassPrefix = _options.ClassPrefix,
@@ -30,32 +26,12 @@ namespace Quill.Delta
             };
         }
 
-        internal string GetListTag(DeltaInsertOp op)
-        {
-            return op.IsOrderedList() ? _options.OrderedListTag :
-                op.IsBulletList() ? _options.BulletListTag :
-                op.IsCheckedList() ? _options.BulletListTag :
-                op.IsUncheckedList() ? _options.BulletListTag :
-                "";
-        }
-
-        IList<Group> GetGroupedOps()
-        {
-            var deltaOps = InsertOpsConverter.Convert(_rawOps);
-            var pairedOps = Grouper.PairOpsWithTheirBlock(deltaOps);
-            var groupedSameStyleBlocks = Grouper.GroupConsecutiveSameStyleBlocks(pairedOps,
-                header: _options.MultiLineHeader,
-                codeBlocks: _options.MultiLineCodeblock,
-                blockquotes: _options.MultiLineBlockquote
-            );
-            var groupedOps = Grouper.ReduceConsecutiveSameStyleBlocksToOne(groupedSameStyleBlocks);
-            return ListNester.Nest(groupedOps);
-        }
+        public XmlConverterOptions Options { get => (XmlConverterOptions)_options; }
 
         public XmlDocument Convert()
         {
             _document = new XmlDocument();
-            var rootNode = _document.CreateElement(_options.RootNodeTag);
+            var rootNode = _document.CreateElement(Options.RootNodeTag);
             _document.AppendChild(rootNode);
 
             var groups = GetGroupedOps();
@@ -102,17 +78,17 @@ namespace Quill.Delta
         XmlNode RenderWithCallbacks(GroupType groupType, Group group, Func<XmlNode> myRenderFn)
         {
             XmlNode node = null;
-            if (_options.BeforeRenderer != null)
+            if (Options.BeforeRenderer != null)
             {
-                node = _options.BeforeRenderer(_document, groupType, group);
+                node = Options.BeforeRenderer(_document, groupType, group);
             }
             if (node== null)
             {
                 node = myRenderFn();
             }
-            if (_options.AfterRenderer != null)
+            if (Options.AfterRenderer != null)
             {
-                node = _options.AfterRenderer(_document, groupType, node);
+                node = Options.AfterRenderer(_document, groupType, node);
             }
             return node;
         }
@@ -204,13 +180,13 @@ namespace Quill.Delta
                     }
                 }
             }
-            if (!isInlineGroup || String.IsNullOrEmpty(_options.ParagraphTag))
+            if (!isInlineGroup || String.IsNullOrEmpty(Options.ParagraphTag))
             {
                 return inlines;
             }
             // wrap in a paragraph node
-            var p = _document.CreateElement(_options.ParagraphTag);
-            if (_options.MultiLineParagraph || inlines == null ||
+            var p = _document.CreateElement(Options.ParagraphTag);
+            if (Options.MultiLineParagraph || inlines == null ||
                 inlines.ChildNodes.Count == 1)
             {
                 if (inlines != null)
@@ -234,7 +210,7 @@ namespace Quill.Delta
                     {
                         p.AppendChild(_document.CreateElement("br"));
                     }
-                    p = _document.CreateElement(_options.ParagraphTag);
+                    p = _document.CreateElement(Options.ParagraphTag);
                     ps.AppendChild(p);
                 }
                 else
@@ -263,7 +239,7 @@ namespace Quill.Delta
             var converter = new OpToXmlConverter(op, _converterOptions);
             var xmlParts = converter.GetXmlParts(_document);
             // replace new lines with br
-            var lines = xmlParts.Content.Split("\n");
+            var lines = xmlParts.Content.Split('\n');
             if (lines.Length == 1)
             {
                 var child = _document.CreateTextNode(lines[0]);
@@ -300,9 +276,9 @@ namespace Quill.Delta
 
         XmlNode RenderCustom(DeltaInsertOp op, DeltaInsertOp contextOp)
         {
-            if (_options.CustomRenderer != null)
+            if (Options.CustomRenderer != null)
             {
-                return _options.CustomRenderer(_document, op, contextOp);
+                return Options.CustomRenderer(_document, op, contextOp);
             }
             return null;
         }

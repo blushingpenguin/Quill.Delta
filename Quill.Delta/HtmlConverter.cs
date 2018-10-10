@@ -5,22 +5,18 @@ using System.Linq;
 
 namespace Quill.Delta
 {
-    public class QuillDeltaToHtmlConverter
+    public class HtmlConverter : Converter
     {
         const string BrTag = "<br/>";
 
-        QuillDeltaToHtmlConverterOptions _options;
-        JArray _rawOps;
         OpToHtmlConverterOptions _converterOptions;
 
-        public QuillDeltaToHtmlConverter(JArray ops, QuillDeltaToHtmlConverterOptions options = null)
+        public HtmlConverter(JArray ops, HtmlConverterOptions options = null) :
+            base(ops, options ?? new HtmlConverterOptions())
         {
-            _options = options ?? new QuillDeltaToHtmlConverterOptions();
-            _rawOps = ops;
-
             _converterOptions = new OpToHtmlConverterOptions()
             {
-                EncodeHtml = _options.EncodeHtml,
+                EncodeHtml = Options.EncodeHtml,
                 ClassPrefix = _options.ClassPrefix,
                 InlineStyles = _options.InlineStyles,
                 ListItemTag = _options.ListItemTag,
@@ -31,28 +27,7 @@ namespace Quill.Delta
             };
         }
 
-        internal string GetListTag(DeltaInsertOp op)
-        {
-            return op.IsOrderedList() ? _options.OrderedListTag :
-                op.IsBulletList() ? _options.BulletListTag :
-                op.IsCheckedList() ? _options.BulletListTag :
-                op.IsUncheckedList() ? _options.BulletListTag :
-                "";
-        }
-
-        IList<Group> GetGroupedOps()
-        {
-            var deltaOps = InsertOpsConverter.Convert(_rawOps);
-            var pairedOps = Grouper.PairOpsWithTheirBlock(deltaOps);
-            var groupedSameStyleBlocks = Grouper.GroupConsecutiveSameStyleBlocks(pairedOps,
-                header: _options.MultiLineHeader,
-                codeBlocks: _options.MultiLineCodeblock,
-                blockquotes: _options.MultiLineBlockquote
-            );
-            var groupedOps = Grouper.ReduceConsecutiveSameStyleBlocksToOne(groupedSameStyleBlocks);
-            // var listNester = new ListNester();
-            return ListNester.Nest(groupedOps);
-        }
+        public HtmlConverterOptions Options { get => (HtmlConverterOptions)_options; }
 
         public string Convert()
         {
@@ -94,17 +69,17 @@ namespace Quill.Delta
         string RenderWithCallbacks(GroupType groupType, Group group, Func<string> myRenderFn)
         {
             string html = null;
-            if (_options.BeforeRenderer != null)
+            if (Options.BeforeRenderer != null)
             {
-                html = _options.BeforeRenderer(groupType, group);
+                html = Options.BeforeRenderer(groupType, group);
             }
             if (String.IsNullOrEmpty(html))
             {
                 html = myRenderFn();
             }
-            if (_options.AfterRenderer != null)
+            if (Options.AfterRenderer != null)
             {
-                html = _options.AfterRenderer(groupType, html);
+                html = Options.AfterRenderer(groupType, html);
             }
             return html;
         }
@@ -166,14 +141,15 @@ namespace Quill.Delta
                 return html;
             }
 
-            var startParaTag = HtmlHelpers.MakeStartTag(_options.ParagraphTag);
-            var endParaTag = HtmlHelpers.MakeEndTag(_options.ParagraphTag);
-            if (html == BrTag || _options.MultiLineParagraph)
+            var startParaTag = HtmlHelpers.MakeStartTag(Options.ParagraphTag);
+            var endParaTag = HtmlHelpers.MakeEndTag(Options.ParagraphTag);
+            if (html == BrTag || Options.MultiLineParagraph)
             {
                 return startParaTag + html + endParaTag;
             }
             return startParaTag + String.Join(endParaTag + startParaTag,
-                html.Split(BrTag).Select(v => String.IsNullOrEmpty(v) ? BrTag : v)) +
+                html.Split(new[] { BrTag }, StringSplitOptions.None)
+                    .Select(v => String.IsNullOrEmpty(v) ? BrTag : v)) +
                 endParaTag;
         }
 
@@ -189,9 +165,9 @@ namespace Quill.Delta
 
         string RenderCustom(DeltaInsertOp op, DeltaInsertOp contextOp)
         {
-            if (_options.CustomRenderer != null)
+            if (Options.CustomRenderer != null)
             {
-                return _options.CustomRenderer(op, contextOp);
+                return Options.CustomRenderer(op, contextOp);
             }
             return "";
         }

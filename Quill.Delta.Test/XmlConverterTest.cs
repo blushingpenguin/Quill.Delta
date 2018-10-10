@@ -3,10 +3,11 @@ using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace Quill.Delta.Test
 {
-    public class QuillDeltaToHtmlConverterTest
+    public class XmlConverterTest
     {
         JArray _hugeOps = JArray.Parse(@"[
             { insert: 'huge', attributes: { size: 'huge' } },
@@ -39,8 +40,9 @@ namespace Quill.Delta.Test
             {""insert"":""\n""},
         ]");
 
-        string _deltaHtml =
-            "<p><a href=\"http://a.com/?x=a&amp;b=&#40;&#41;\" target=\"_blank\">link</a>This <span class=\"noz-font-monospace\">is</span>" +
+        string _deltaXml =
+            "<template>" +
+            "<p><a href=\"http://a.com/?x=a&amp;b=()\" target=\"_blank\">link</a>This <span class=\"noz-font-monospace\">is</span>" +
             " a <span class=\"noz-size-large\">test</span> " +
             "<strong><em>data</em></strong> " +
             "<s><u>that</u></s>" +
@@ -52,28 +54,29 @@ namespace Quill.Delta.Test
             "<ul><li>list</li></ul>" +
             "<ul><li data-checked=\"true\">list</li></ul>" +
             "<p><strong><code>some code</code></strong>" +
-            "<a href=\"#top\" target=\"_blank\"><em><code>Top</code></em></a></p>";
+            "<a href=\"#top\" target=\"_blank\"><em><code>Top</code></em></a></p>" +
+            "</template>";
 
         [Test]
-        public void ConstructorReturnsProperHtml()
+        public void ConstructorReturnsProperXml()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_deltaOps,
-                new QuillDeltaToHtmlConverterOptions
+            var qdc = new XmlConverter(_deltaOps,
+                new XmlConverterOptions
                 {
                     ClassPrefix = "noz"
                 }
             );
-            var html = qdc.Convert();
-            html.Should().Be(_deltaHtml);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be(_deltaXml);
         }
 
         [Test]
         public void ConstructorSetsDefaultInlineStyles()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_hugeOps,
-                new QuillDeltaToHtmlConverterOptions() { InlineStyles = new InlineStyles() });
-            var html = qdc.Convert();
-            html.Should().Contain("<span style=\"font-size: 2.5em\">huge</span>");
+            var qdc = new XmlConverter(_hugeOps,
+                new XmlConverterOptions() { InlineStyles = new InlineStyles() });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("<span style=\"font-size: 2.5em\">huge</span>");
         }
 
         [Test]
@@ -83,16 +86,16 @@ namespace Quill.Delta.Test
             {
                 { "huge", "font-size: 6em" }
              };
-            var qdc = new QuillDeltaToHtmlConverter(_hugeOps,
-                new QuillDeltaToHtmlConverterOptions
+            var qdc = new XmlConverter(_hugeOps,
+                new XmlConverterOptions
                 {
                     InlineStyles = new InlineStyles
                     {
                         Size = InlineStyles.MakeLookup(stylesDic)
                     }
                 });
-            var html = qdc.Convert();
-            html.Should().Contain("<span style=\"font-size: 6em\">huge</span>");
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("<span style=\"font-size: 6em\">huge</span>");
         }
 
         [Test]
@@ -107,9 +110,9 @@ namespace Quill.Delta.Test
                 { insert: ""\n"", attributes: { 'code-block': true } },
             ]");
 
-            var qdc = new QuillDeltaToHtmlConverter(ops);
-            var html = qdc.Convert();
-            html.Should().Contain("<pre>this is code");
+            var qdc = new XmlConverter(ops);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("<pre>this is code");
         }
 
         [Test]
@@ -125,11 +128,11 @@ namespace Quill.Delta.Test
                     }
                 }
             }]");
-            var qdc = new QuillDeltaToHtmlConverter(ops);
-            var html = qdc.Convert();
-            html.Should().Be("<p><a class=\"abc\"" +
+            var qdc = new XmlConverter(ops);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><p><a class=\"abc\"" +
                " href=\"http://abc.com/a\" target=\"_blank\"" +
-               ">mention</a></p>");
+               ">mention</a></p></template>");
         }
 
         [Test]
@@ -140,9 +143,9 @@ namespace Quill.Delta.Test
                 mentions: true, mention: { slug: 'aa' }
                 }
             }]");
-            var qdc = new QuillDeltaToHtmlConverter(ops);
-            var html = qdc.Convert();
-            html.Should().Be("<p><a href=\"about:blank\">mention</a></p>");
+            var qdc = new XmlConverter(ops);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><p><a href=\"about:blank\">mention</a></p></template>");
         }
 
         [Test]
@@ -156,11 +159,11 @@ namespace Quill.Delta.Test
                 { insert: ""\n"", attributes: { list: 'bullet' } },
                 { insert: ""\n"", attributes: { list: 'ordered' } },
             ]");
-            var qdc = new QuillDeltaToHtmlConverter(ops4);
-            var html = qdc.Convert();
+            var qdc = new XmlConverter(ops4);
+            var xml = qdc.Convert().OuterXml;
 
-            html.Should().Contain("<p>mr");
-            html.Should().Contain("</ol><ul><li>there");
+            xml.Should().Contain("<p>mr");
+            xml.Should().Contain("</ol><ul><li>there");
         }
 
         [Test]
@@ -169,10 +172,10 @@ namespace Quill.Delta.Test
             var ops4 = JArray.Parse(@"[
                 { insert: ""hello\nhow areyou?\n\nbye"" }
             ]");
-            var qdc = new QuillDeltaToHtmlConverter(ops4,
-                new QuillDeltaToHtmlConverterOptions { MultiLineParagraph = false });
-            var html = qdc.Convert();
-            html.Should().Be("<p>hello</p><p>how areyou?</p><p><br/></p><p>bye</p>");
+            var qdc = new XmlConverter(ops4,
+                new XmlConverterOptions { MultiLineParagraph = false });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><p>hello</p><p>how areyou?</p><p><br /></p><p>bye</p></template>");
         }
 
         [Test]
@@ -188,16 +191,18 @@ namespace Quill.Delta.Test
                 { insert: 'not done'},
                 { insert: ""\n"", attributes: {indent:1, list: 'unchecked'}}
              ]");
-            var qdc = new QuillDeltaToHtmlConverter(ops4);
-            var html = qdc.Convert();
-            html.Should().Be(
+            var qdc = new XmlConverter(ops4);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be(
+                "<template>" +
                "<ul>" +
                "<li data-checked=\"true\">hello</li>" +
                "<li data-checked=\"false\">there</li>" +
                "<li data-checked=\"true\">man" +
                    "<ul><li data-checked=\"false\">not done</li></ul>" +
                "</li>" +
-               "</ul>");
+               "</ul>" +
+               "</template>");
         }
 
         JArray _posOps = JArray.Parse(@"[
@@ -210,22 +215,22 @@ namespace Quill.Delta.Test
         [Test]
         public void PositionalStylesUseSpecifiedTag()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_posOps,
-               new QuillDeltaToHtmlConverterOptions() { ParagraphTag = "div" });
-            var html = qdc.Convert();
-            html.Should().Contain("<div class=\"ql-align");
-            html.Should().Contain("<div class=\"ql-direction");
-            html.Should().Contain("<div class=\"ql-indent");
+            var qdc = new XmlConverter(_posOps,
+               new XmlConverterOptions() { ParagraphTag = "div" });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("<div class=\"ql-align");
+            xml.Should().Contain("<div class=\"ql-direction");
+            xml.Should().Contain("<div class=\"ql-indent");
         }
 
         [Test]
         public void PositionalStylesUseDefaultTag()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_posOps);
-            var html = qdc.Convert();
-            html.Should().Contain("<p class=\"ql-align");
-            html.Should().Contain("<p class=\"ql-direction");
-            html.Should().Contain("<p class=\"ql-indent");
+            var qdc = new XmlConverter(_posOps);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("<p class=\"ql-align");
+            xml.Should().Contain("<p class=\"ql-direction");
+            xml.Should().Contain("<p class=\"ql-indent");
         }
 
         JArray _targetOps = JArray.Parse(@"[
@@ -237,36 +242,36 @@ namespace Quill.Delta.Test
         [Test]
         public void TargetAttrNoLinkTarget()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_targetOps,
-               new QuillDeltaToHtmlConverterOptions { LinkTarget = "" });
-            var html = qdc.Convert();
-            html.Should().Be(
-               "<p><a href=\"http://#\" target=\"_self\">A</a>" +
+            var qdc = new XmlConverter(_targetOps,
+               new XmlConverterOptions { LinkTarget = "" });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be(
+               "<template><p><a href=\"http://#\" target=\"_self\">A</a>" +
                "<a href=\"http://#\" target=\"_blank\">B</a>" +
-               "<a href=\"http://#\">C</a></p>");
+               "<a href=\"http://#\">C</a></p></template>");
         }
 
         [Test]
         public void TargetAttrDefaultLinkTarget()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_targetOps);
-            var html = qdc.Convert();
-            html.Should().Be(
-               "<p><a href=\"http://#\" target=\"_self\">A</a>" +
+            var qdc = new XmlConverter(_targetOps);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be(
+               "<template><p><a href=\"http://#\" target=\"_self\">A</a>" +
                "<a href=\"http://#\" target=\"_blank\">B</a>" +
-               "<a href=\"http://#\" target=\"_blank\">C</a></p>");
+               "<a href=\"http://#\" target=\"_blank\">C</a></p></template>");
         }
 
         [Test]
         public void TargetAttrTopTarget()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_targetOps,
-               new QuillDeltaToHtmlConverterOptions() { LinkTarget = "_top" });
-            var html = qdc.Convert();
-            html.Should().Be(
-               "<p><a href=\"http://#\" target=\"_self\">A</a>" +
+            var qdc = new XmlConverter(_targetOps,
+               new XmlConverterOptions() { LinkTarget = "_top" });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be(
+               "<template><p><a href=\"http://#\" target=\"_self\">A</a>" +
                "<a href=\"http://#\" target=\"_blank\">B</a>" +
-               "<a href=\"http://#\" target=\"_top\">C</a></p>");
+               "<a href=\"http://#\" target=\"_top\">C</a></p></template>");
         }
 
         [Test]
@@ -275,9 +280,9 @@ namespace Quill.Delta.Test
             var ops = JArray.Parse(@"[
                 { insert: { customstuff: 'my val' } }
             ]");
-            var qdc = new QuillDeltaToHtmlConverter(ops);
-            var html = qdc.Convert();
-            html.Should().Be("<p></p>");
+            var qdc = new XmlConverter(ops);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><p /></template>");
         }
 
         [Test]
@@ -287,19 +292,23 @@ namespace Quill.Delta.Test
                 { insert: { bolditalic: 'my text' } },
                 { insert: { blah: 1 } }
              ]");
-            CustomRenderer renderer = (op, contextOp) =>
+            XmlCustomRenderer renderer = (doc, op, contextOp) =>
             {
                 var insert = (InsertDataCustom)op.Insert;
                 if (insert.CustomType == "bolditalic")
                 {
-                    return $"<b><i>{insert.Value}</i></b>";
+                    var b = doc.CreateElement("b");
+                    var i = b.AppendChild(doc.CreateElement("i"))
+                                .AppendChild(doc.CreateTextNode(
+                                    insert.Value.ToString()));
+                    return b;
                 }
-                return "unknown";
+                return doc.CreateTextNode("unknown");
             };
-            var qdc = new QuillDeltaToHtmlConverter(ops,
-                new QuillDeltaToHtmlConverterOptions { CustomRenderer = renderer });
-            var html = qdc.Convert();
-            html.Should().Be("<p><b><i>my text</i></b>unknown</p>");
+            var qdc = new XmlConverter(ops,
+                new XmlConverterOptions { CustomRenderer = renderer });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><p><b><i>my text</i></b>unknown</p></template>");
         }
 
         [Test]
@@ -311,20 +320,26 @@ namespace Quill.Delta.Test
                { insert: '!' },
                {insert: {myblot: 'how r u?'}, attributes: {renderAsBlock: true}}
             ]");
-            CustomRenderer renderer = (op, contextOp) =>
+            XmlCustomRenderer renderer = (doc, op, contextOp) =>
             {
                 var insert = (InsertDataCustom)op.Insert;
                 if (insert.CustomType == "myblot")
                 {
-                    return op.Attributes.RenderAsBlock == true ?
-                       $"<div>{insert.Value}</div>" : insert.Value.ToString();
+                    var textNode = doc.CreateTextNode(insert.Value.ToString());
+                    if (op.Attributes.RenderAsBlock == true)
+                    {
+                        var div = doc.CreateElement("div");
+                        div.AppendChild(textNode);
+                        return div;
+                    }
+                    return textNode;
                 }
-                return "unknown";
+                return doc.CreateTextNode("unknown");
             };
-            var qdc = new QuillDeltaToHtmlConverter(ops,
-                new QuillDeltaToHtmlConverterOptions { CustomRenderer = renderer });
-            var html = qdc.Convert();
-            html.Should().Be("<p>hello my friend!</p><div>how r u?</div>");
+            var qdc = new XmlConverter(ops,
+                new XmlConverterOptions { CustomRenderer = renderer });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><p>hello my friend!</p><div>how r u?</div></template>");
         }
 
         JArray _customTypeCodeBlockOps = JArray.Parse(@"[
@@ -337,38 +352,39 @@ namespace Quill.Delta.Test
             ]");
 
 
-        CustomRenderer _customTypeCodeBlockRenderer = (op, contextOp) =>
+        XmlCustomRenderer _customTypeCodeBlockRenderer = (doc, op, contextOp) =>
         {
             var insert = (InsertDataCustom)op.Insert;
             if (insert.CustomType == "colonizer")
             {
-                return insert.Value.ToString();
+                return doc.CreateTextNode(insert.Value.ToString());
             }
-            return "";
+            return doc.CreateTextNode("");
         };
 
         [Test]
         public void CustomInsertTypesInCodeBlocks()
         {
-            var qdc = new QuillDeltaToHtmlConverter(new JArray(
+            var qdc = new XmlConverter(new JArray(
                 _customTypeCodeBlockOps[0], _customTypeCodeBlockOps[1]),
-                new QuillDeltaToHtmlConverterOptions {
+                new XmlConverterOptions {
                     CustomRenderer = _customTypeCodeBlockRenderer });
-            var html = qdc.Convert();
-            html.Should().Be("<pre>:</pre>");
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><pre>:</pre></template>");
         }
 
         [Test]
         public void CustomInsertTypesInCodeBlocks2()
         {
-            var qdc = new QuillDeltaToHtmlConverter(
+            var qdc = new XmlConverter(
                 _customTypeCodeBlockOps,
-                new QuillDeltaToHtmlConverterOptions
+                new XmlConverterOptions
                 {
-                    CustomRenderer = _customTypeCodeBlockRenderer
+                    CustomRenderer = _customTypeCodeBlockRenderer,
+                    RootNodeTag = "x"
                 });
-            var html = qdc.Convert();
-            html.Should().Be("<pre>:\ncode1\n:</pre>");
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<x><pre>:\ncode1\n:</pre></x>");
         }
 
         JArray _customTypeHeaderOps = JArray.Parse(@"[
@@ -380,36 +396,36 @@ namespace Quill.Delta.Test
            { insert: ""\n"", attributes: { header: 1 } }
         ]");
 
-        CustomRenderer _customTypeHeaderRenderer = (op, contextOp) =>
+        XmlCustomRenderer _customTypeHeaderRenderer = (doc, op, contextOp) =>
         {
             var insert = (InsertDataCustom)op.Insert;
             if (insert.CustomType == "colonizer")
             {
-                return insert.Value.ToString();
+                return doc.CreateTextNode(insert.Value.ToString());
             }
-            return "";
+            return doc.CreateTextNode("");
         };
 
         [Test]
         public void CustomInsertTypesInHeaders()
         {
-            var qdc = new QuillDeltaToHtmlConverter(new JArray(
+            var qdc = new XmlConverter(new JArray(
                 _customTypeHeaderOps[0], _customTypeHeaderOps[1]),
-                new QuillDeltaToHtmlConverterOptions()
+                new XmlConverterOptions()
                 { CustomRenderer = _customTypeHeaderRenderer });
-            var html = qdc.Convert();
-            html.Should().Be("<h1>:</h1>");
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><h1>:</h1></template>");
         }
 
         [Test]
         public void CustomInsertTypesInHeaders2()
         {
-            var qdc = new QuillDeltaToHtmlConverter(
+            var qdc = new XmlConverter(
                 _customTypeHeaderOps,
-                new QuillDeltaToHtmlConverterOptions()
+                new XmlConverterOptions()
                 { CustomRenderer = _customTypeHeaderRenderer });
-            var html = qdc.Convert();
-            html.Should().Be("<h1>:<br/>hello<br/>:</h1>");
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><h1>:<br />hello<br />:</h1></template>");
         }
 
         [Test]
@@ -417,7 +433,7 @@ namespace Quill.Delta.Test
         {
             var op = new DeltaInsertOp("\n",
                new OpAttributes { List = ListType.Ordered });
-            var qdc = new QuillDeltaToHtmlConverter(_deltaOps);
+            var qdc = new XmlConverter(_deltaOps);
             qdc.GetListTag(op).Should().Be("ol");
         }
 
@@ -426,7 +442,7 @@ namespace Quill.Delta.Test
         {
             var op = new DeltaInsertOp("\n",
                new OpAttributes { List = ListType.Bullet });
-            var qdc = new QuillDeltaToHtmlConverter(_deltaOps);
+            var qdc = new XmlConverter(_deltaOps);
             qdc.GetListTag(op).Should().Be("ul");
         }
 
@@ -435,7 +451,7 @@ namespace Quill.Delta.Test
         {
             var op = new DeltaInsertOp("\n",
                new OpAttributes { List = ListType.Bullet });
-            var qdc = new QuillDeltaToHtmlConverter(_deltaOps);
+            var qdc = new XmlConverter(_deltaOps);
             qdc.GetListTag(op).Should().Be("ul");
         }
 
@@ -444,7 +460,7 @@ namespace Quill.Delta.Test
         {
             var op = new DeltaInsertOp("\n",
                new OpAttributes { List = ListType.Bullet });
-            var qdc = new QuillDeltaToHtmlConverter(_deltaOps);
+            var qdc = new XmlConverter(_deltaOps);
             qdc.GetListTag(op).Should().Be("ul");
         }
 
@@ -458,38 +474,42 @@ namespace Quill.Delta.Test
         [Test]
         public void RenderInlinesSimple()
         {
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
             var inlines = qdc.RenderInlines(_inlineOps);
-            inlines.Should().Be("<p>Hello" +
-               "<em> my </em><br/> name is joey</p>");
+            inlines.OuterXml.Should().Be("<p>Hello" +
+               "<em> my </em><br /> name is joey</p>");
         }
 
         [Test]
         public void RenderInlinesCustomParagraphTag()
         {
-            var qdc = new QuillDeltaToHtmlConverter(new JArray(),
-                new QuillDeltaToHtmlConverterOptions { ParagraphTag = "div" });
+            var qdc = new XmlConverter(new JArray(),
+                new XmlConverterOptions { ParagraphTag = "div" });
+            qdc._document = new XmlDocument();
             var inlines = qdc.RenderInlines(_inlineOps);
-            inlines.Should().Be(
-               "<div>Hello<em> my </em><br/> name is joey</div>");
+            inlines.OuterXml.Should().Be(
+               "<div>Hello<em> my </em><br /> name is joey</div>");
         }
 
         [Test]
         public void RenderInlinesEmptyParagraphTag()
         {
-            var qdc = new QuillDeltaToHtmlConverter(new JArray(),
-                new QuillDeltaToHtmlConverterOptions { ParagraphTag = "" });
+            var qdc = new XmlConverter(new JArray(),
+                new XmlConverterOptions { ParagraphTag = "" });
+            qdc._document = new XmlDocument();
             var inlines = qdc.RenderInlines(_inlineOps);
-            inlines.Should().Be("Hello<em> my </em><br/> name is joey");
+            inlines.OuterXml.Should().Be("Hello<em> my </em><br /> name is joey");
         }
 
         [Test]
         public void RenderInlinesPlainNL()
         {
             var ops = new DeltaInsertOp[] { new DeltaInsertOp("\n") };
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
-            var html = qdc.RenderInlines(ops);
-            html.Should().Be("<p><br/></p>");
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops).OuterXml;
+            xml.Should().Be("<p><br /></p>");
         }
 
         [Test]
@@ -497,9 +517,10 @@ namespace Quill.Delta.Test
         {
             var ops = new DeltaInsertOp[] { new DeltaInsertOp("\n",
                 new OpAttributes { Font = "arial" }) };
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
-            var html = qdc.RenderInlines(ops);
-            html.Should().Be("<p><br/></p>");
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops).OuterXml;
+            xml.Should().Be("<p><br /></p>");
         }
 
         [Test]
@@ -507,10 +528,11 @@ namespace Quill.Delta.Test
         {
             var ops = new DeltaInsertOp[] { new DeltaInsertOp("\n",
                 new OpAttributes { Font = "arial" }) };
-            var qdc = new QuillDeltaToHtmlConverter(new JArray(),
-                new QuillDeltaToHtmlConverterOptions { ParagraphTag = "" });
-            var html = qdc.RenderInlines(ops);
-            html.Should().Be("<br/>");
+            var qdc = new XmlConverter(new JArray(),
+                new XmlConverterOptions { ParagraphTag = "" });
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops).OuterXml;
+            xml.Should().Be("<br />");
         }
 
         [Test]
@@ -518,9 +540,10 @@ namespace Quill.Delta.Test
         {
             var ops = new DeltaInsertOp[] {
                 new DeltaInsertOp("\n"), new DeltaInsertOp("aa") };
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
-            var html = qdc.RenderInlines(ops);
-            html.Should().Be("<p><br/>aa</p>");
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops).OuterXml;
+            xml.Should().Be("<p><br />aa</p>");
         }
 
         [Test]
@@ -528,9 +551,10 @@ namespace Quill.Delta.Test
         {
             var ops = new DeltaInsertOp[] {
                 new DeltaInsertOp("aa"), new DeltaInsertOp("\n") };
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
-            var html = qdc.RenderInlines(ops);
-            html.Should().Be("<p>aa</p>");
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops).OuterXml;
+            xml.Should().Be("<p>aa</p>");
         }
 
         [Test]
@@ -541,21 +565,22 @@ namespace Quill.Delta.Test
             var nlop = new DeltaInsertOp("\n");
             var stylednlop = new DeltaInsertOp("\n",
                 new OpAttributes { Color = "#333", Italic = true });
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
-            var html = qdc.RenderInlines(ops);
-            html.Should().Be("<p>aabb</p>");
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops).OuterXml;
+            xml.Should().Be("<p>aabb</p>");
 
             var ops0 = new DeltaInsertOp[] {
                 nlop, ops[0], nlop, ops[1]
             };
-            html = qdc.RenderInlines(ops0);
-            html.Should().Be("<p><br/>aa<br/>bb</p>");
+            xml = qdc.RenderInlines(ops0).OuterXml;
+            xml.Should().Be("<p><br />aa<br />bb</p>");
 
             var ops4 = new DeltaInsertOp[] {
                 ops[0], stylednlop, stylednlop, stylednlop, ops[1]
             };
-            html = qdc.RenderInlines(ops4);
-            html.Should().Be("<p>aa<br/><br/><br/>bb</p>");
+            xml = qdc.RenderInlines(ops4).OuterXml;
+            xml.Should().Be("<p>aa<br /><br /><br />bb</p>");
         }
 
         [Test]
@@ -565,8 +590,9 @@ namespace Quill.Delta.Test
                new OpAttributes { Header = 3, Indent = 2 });
             var inlineop = new DeltaInsertOp("hi there");
 
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
-            var blockhtml = qdc.RenderBlock(op, new DeltaInsertOp[] { inlineop });
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var blockhtml = qdc.RenderBlock(op, new DeltaInsertOp[] { inlineop }).OuterXml;
             blockhtml.Should().Be("<h3 class=\"ql-indent-2\">hi there</h3>");
         }
 
@@ -575,9 +601,10 @@ namespace Quill.Delta.Test
         {
             var op = new DeltaInsertOp("\n",
                new OpAttributes { Header = 3, Indent = 2 });
-            var qdc = new QuillDeltaToHtmlConverter(new JArray());
-            var blockhtml = qdc.RenderBlock(op, new DeltaInsertOp[0]);
-            blockhtml.Should().Be("<h3 class=\"ql-indent-2\"><br/></h3>");
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var blockhtml = qdc.RenderBlock(op, new DeltaInsertOp[0]).OuterXml;
+            blockhtml.Should().Be("<h3 class=\"ql-indent-2\"><br /></h3>");
         }
 
         JArray _codeBlockOps = JArray.Parse(@"[
@@ -623,31 +650,31 @@ namespace Quill.Delta.Test
         public void CodeBlockSimple()
         {
             //console.log(encodeHtml("<p>line 4</p>"));
-            var qdc = new QuillDeltaToHtmlConverter(_codeBlockOps);
-            var html = qdc.Convert();
-            html.Should().Be("<pre>line 1\nline 2\nline 3\n" +
-               HtmlHelpers.EncodeHtml("<p>line 4</p>") +
-               "</pre>");
+            var qdc = new XmlConverter(_codeBlockOps);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><pre>line 1\nline 2\nline 3\n" +
+               XmlHelpers.EncodeXml("<p>line 4</p>") +
+               "</pre></template>");
         }
 
         [Test]
         public void CodeBlockNoMultiline()
         {
-            var qdc = new QuillDeltaToHtmlConverter(_codeBlockOps,
-                new QuillDeltaToHtmlConverterOptions { MultiLineCodeblock = false });
-            var html = qdc.Convert();
-            html.Should().Be(
-               "<pre>line 1</pre><pre>line 2</pre><pre>line 3</pre>" +
-               "<pre>" + HtmlHelpers.EncodeHtml("<p>line 4</p>") + "</pre>");
+            var qdc = new XmlConverter(_codeBlockOps,
+                new XmlConverterOptions { MultiLineCodeblock = false });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be(
+               "<template><pre>line 1</pre><pre>line 2</pre><pre>line 3</pre>" +
+               "<pre>" + XmlHelpers.EncodeXml("<p>line 4</p>") + "</pre></template>");
         }
 
         [Test]
         public void CodeBlockOneLine()
         {
-            var qdc = new QuillDeltaToHtmlConverter(new JArray(
+            var qdc = new XmlConverter(new JArray(
                 _codeBlockOps[0], _codeBlockOps[1]));
-            var html = qdc.Convert();
-            html.Should().Be("<pre>line 1</pre>");
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><pre>line 1</pre></template>");
         }
 
         JArray _beforeAndAfterOps = JArray.Parse(@"[
@@ -666,7 +693,7 @@ namespace Quill.Delta.Test
         [Test]
         public void BeforeAndAfterRenderCallbacks()
         {
-            BeforeRenderer beforeRenderer = (groupType, data) =>
+            XmlBeforeRenderer beforeRenderer = (doc, groupType, data) =>
             {
                 if (groupType == GroupType.InlineGroup)
                 {
@@ -693,31 +720,31 @@ namespace Quill.Delta.Test
                 {
                     throw new Exception($"Unknown group type {groupType}");
                 }
-                return "";
+                return null;
             };
-            AfterRenderer afterRenderer = (groupType, html) =>
+            XmlAfterRenderer afterRenderer = (doc, groupType, node) =>
             {
                 if (groupType == GroupType.InlineGroup)
                 {
-                    html.Should().Contain("<strong>hello");
+                    node.OuterXml.Should().Contain("<strong>hello");
                 }
                 else if (groupType == GroupType.Video)
                 {
-                    html.Should().StartWith("<iframe");
+                    node.OuterXml.Should().StartWith("<iframe");
                 }
                 else if (groupType == GroupType.Block)
                 {
-                    html.Should().StartWith("<blockquote");
+                    node.OuterXml.Should().StartWith("<blockquote");
                 }
                 else
                 {
-                    html.Should().Contain("list item 1<ul><li");
+                    node.OuterXml.Should().Contain("list item 1<ul><li");
                 }
-                return html;
+                return node;
             };
 
-            var qdc = new QuillDeltaToHtmlConverter(_beforeAndAfterOps,
-                new QuillDeltaToHtmlConverterOptions()
+            var qdc = new XmlConverter(_beforeAndAfterOps,
+                new XmlConverterOptions()
                 {
                     BeforeRenderer = beforeRenderer,
                     AfterRenderer = afterRenderer
@@ -738,17 +765,17 @@ namespace Quill.Delta.Test
             ]");
 
             int blockCount = 0;
-            BeforeRenderer beforeRenderer = (gtype, group) =>
+            XmlBeforeRenderer beforeRenderer = (doc, gtype, group) =>
             {
                 if (gtype == GroupType.Block)
                 {
                     ++blockCount;
                 }
-                return "";
+                return null;
             };
 
-            var qdc = new QuillDeltaToHtmlConverter(ops,
-                new QuillDeltaToHtmlConverterOptions()
+            var qdc = new XmlConverter(ops,
+                new XmlConverterOptions()
                 {
                     BeforeRenderer = beforeRenderer
                 });
@@ -761,12 +788,12 @@ namespace Quill.Delta.Test
         {
             var ops = JArray.Parse(
                 @"[{ insert: { video: ""http"" } }, { insert: 'aa' }]");
-            BeforeRenderer beforeRenderer = (groupType, group) =>
-                "<my custom video html>";
-            var qdc = new QuillDeltaToHtmlConverter(ops,
-                new QuillDeltaToHtmlConverterOptions { BeforeRenderer = beforeRenderer });
-            var html = qdc.Convert();
-            html.Should().Contain("<my custom");
+            XmlBeforeRenderer beforeRenderer = (doc, groupType, group) =>
+                doc.CreateElement("my-custom-video-xml");
+            var qdc = new XmlConverter(ops,
+                new XmlConverterOptions { BeforeRenderer = beforeRenderer });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("<my-custom");
          }
 
         [Test]
@@ -775,22 +802,22 @@ namespace Quill.Delta.Test
             var ops = JArray.Parse(
                 "[{ insert: { video: \"http\" } }, { insert: 'aa' }]");
 
-            var qdc = new QuillDeltaToHtmlConverter(ops);
-            var html = qdc.Convert();
-            html.Should().Contain("iframe");
+            var qdc = new XmlConverter(ops);
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("iframe");
 
-            qdc = new QuillDeltaToHtmlConverter(ops,
-                new QuillDeltaToHtmlConverterOptions
-                { BeforeRenderer = (gt, g) => "" });
-            html = qdc.Convert();
-            html.Should().Contain("<iframe");
-            html.Should().Contain("aa");
+            qdc = new XmlConverter(ops,
+                new XmlConverterOptions
+                { BeforeRenderer = (doc, gt, g) => null });
+            xml = qdc.Convert().OuterXml;
+            xml.Should().Contain("<iframe");
+            xml.Should().Contain("aa");
 
-            qdc = new QuillDeltaToHtmlConverter(ops,
-                new QuillDeltaToHtmlConverterOptions
-                { AfterRenderer = (gt, g) => "" });
-            html = qdc.Convert();
-            html.Should().BeEmpty();
+            qdc = new XmlConverter(ops,
+                new XmlConverterOptions
+                { AfterRenderer = (doc, gt, g) => null });
+            xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template />");
         }
     }
 }
