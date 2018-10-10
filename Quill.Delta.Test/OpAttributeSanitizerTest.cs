@@ -72,6 +72,77 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void SanitizeHandlesCustomAttributes()
+        {
+            var attrs = JObject.Parse(@"{
+                customAttr1: 'attr1',
+                customAttr2: 'attr2',
+            }");
+            var result = OpAttributeSanitizer.Sanitize(attrs);
+            result.Should().BeEquivalentTo(new OpAttributes()
+            {
+                CustomAttributes = new Dictionary<string, JToken>()
+                {
+                    {  "customAttr1", JValue.CreateString("attr1") },
+                    {  "customAttr2", JValue.CreateString("attr2") }
+                },
+            }, opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
+        public void SanitizeIgnoresMentionsWithoutMention()
+        {
+            var attrs = JObject.Parse(@"{
+                mentions: true
+            }");
+            var result = OpAttributeSanitizer.Sanitize(attrs);
+            result.Should().BeEquivalentTo(new OpAttributes(),
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
+        public void SanitizeIgnoresMentionsFalse()
+        {
+            var attrs = JObject.Parse(@"{
+                mentions: false,
+                mention: {
+                   'class': 'A-cls-9',
+                   id: 'An-id_9:.',
+                   target: '_blank',
+                   avatar: 'http://www.yahoo.com',
+                   'end-point': 'http://abc.com',
+                   slug: 'my-name'
+                }
+            }");
+            var result = OpAttributeSanitizer.Sanitize(attrs);
+            result.Should().BeEquivalentTo(new OpAttributes(),
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
+        public void SanitizeIgnoresMentionsWithMentionsMissing()
+        {
+            var attrs = JObject.Parse(@"{
+                mention: {}
+            }");
+            var result = OpAttributeSanitizer.Sanitize(attrs);
+            result.Should().BeEquivalentTo(new OpAttributes(),
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
+        public void SanitizeIgnoresMentionsWithNoneSet()
+        {
+            var attrs = JObject.Parse(@"{
+                mentions: true,
+                mention: {}
+            }");
+            var result = OpAttributeSanitizer.Sanitize(attrs);
+            result.Should().BeEquivalentTo(new OpAttributes(),
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
         public void SanitizeSanitizesAttributes()
         {
             var attrs = JObject.Parse(@"{

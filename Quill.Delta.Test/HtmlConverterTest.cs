@@ -176,6 +176,19 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void SeparateParagraphsEndWithNL()
+        {
+            var ops4 = JArray.Parse(@"[
+                { insert: ""hello\nhow areyou?\n\nbye\n\n\n"" }
+            ]");
+            var qdc = new HtmlConverter(ops4,
+                new HtmlConverterOptions { MultiLineParagraph = false });
+            var html = qdc.Convert();
+            html.Should().Be("<p>hello</p><p>how areyou?</p><p><br/></p><p>bye</p><p><br/></p><p><br/></p>");
+        }
+
+
+        [Test]
         public void CheckedAndUncheckedLists()
         {
             var ops4 = JArray.Parse(@"[
@@ -431,10 +444,10 @@ namespace Quill.Delta.Test
         }
 
         [Test]
-        public void GetListTagchecked()
+        public void GetListTagChecked()
         {
             var op = new DeltaInsertOp("\n",
-               new OpAttributes { List = ListType.Bullet });
+               new OpAttributes { List = ListType.Checked });
             var qdc = new HtmlConverter(_deltaOps);
             qdc.GetListTag(op).Should().Be("ul");
         }
@@ -443,9 +456,18 @@ namespace Quill.Delta.Test
         public void GetListTagUnchecked()
         {
             var op = new DeltaInsertOp("\n",
-               new OpAttributes { List = ListType.Bullet });
+               new OpAttributes { List = ListType.Unchecked });
             var qdc = new HtmlConverter(_deltaOps);
             qdc.GetListTag(op).Should().Be("ul");
+        }
+
+        [Test]
+        public void GetListTagInvalidTag()
+        {
+            var op = new DeltaInsertOp("\n",
+               new OpAttributes { List = (ListType)99 });
+            var qdc = new HtmlConverter(_deltaOps);
+            qdc.GetListTag(op).Should().Be("");
         }
 
         DeltaInsertOp[] _inlineOps = new DeltaInsertOp[] {

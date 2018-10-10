@@ -44,6 +44,12 @@ namespace Quill.Delta.Test
             var data = JArray.Parse("[{insert:''}]");
             InsertOpsConverter.Convert(data).Should().Equal(new DeltaInsertOp[0]);
         }
+        
+        [Test]
+        public void NullOpTest()
+        {
+            InsertOpsConverter.Convert(null).Should().Equal(new DeltaInsertOp[0]);
+        }
 
         [Test]
         public void CakeOpTest()
@@ -74,6 +80,12 @@ namespace Quill.Delta.Test
             {
                 InsertOpsConverter.ConvertInsertVal(value).Should().Be(null);
             }
+        }
+
+        [Test]
+        public void InsertNullConversion()
+        {
+            InsertOpsConverter.ConvertInsertVal(null).Should().BeNull();
         }
 
         [Test]

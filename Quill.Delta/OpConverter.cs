@@ -20,7 +20,7 @@ namespace Quill.Delta
             { "huge", "font-size: 2.5em" }
         };
 
-        static InlineStyles DEFAULT_INLINE_STYLES = new InlineStyles()
+        internal static InlineStyles DEFAULT_INLINE_STYLES = new InlineStyles()
         {
             Font = (value, op) => InlineStyles.LookupValue(DEFAULT_INLINE_FONTS, value, "font-family:" + value),
             Size = InlineStyles.MakeLookup(DEFAULT_SIZES),
@@ -56,8 +56,6 @@ namespace Quill.Delta
 
         protected abstract string EncodeLink(string link);
         protected abstract string EncodeContent(string content);
-
-        public T Default<T>(T value, T def) => value == null ? def : value;
 
         public string PrefixClass(string className) =>
             String.IsNullOrEmpty(_options.ClassPrefix) ?
@@ -96,12 +94,11 @@ namespace Quill.Delta
             }
             if (attrs.Align.HasValue)
             {
-                classes.Add(PrefixClass($"align-{Align.GetStringValue(attrs.Align)}"));
+                classes.Add(PrefixClass($"align-{AlignConverter.GetStringValue(attrs.Align)}"));
             }
             if (attrs.Direction.HasValue)
             {
-                string dirnValue =
-                    attrs.Direction == DirectionType.Rtl ? "rtl" : "";
+                string dirnValue = DirectionConverter.GetStringValue(attrs.Direction);
                 classes.Add(PrefixClass($"direction-{dirnValue}"));
             }
             if (!String.IsNullOrEmpty(attrs.Font))
@@ -162,14 +159,14 @@ namespace Quill.Delta
             convert(iss?.Color ?? DEFAULT_INLINE_STYLES.Color,
                 attrs.Color, "color");
 
-            if (_options.InlineStyles != null ||
+            if (iss != null ||
                 !_options.AllowBackgroundClasses.HasValue ||
                 !_options.AllowBackgroundClasses.Value)
             {
                 convert(iss?.Background ?? DEFAULT_INLINE_STYLES.Background,
                     attrs.Background, "background-color");
             }
-            if (_options.InlineStyles != null)
+            if (iss != null)
             {
                 if (attrs.Indent.HasValue)
                 {
@@ -177,9 +174,9 @@ namespace Quill.Delta
                         attrs.Indent.Value.ToString(), "indent");
                 }
                 convert(iss.Align ?? DEFAULT_INLINE_STYLES.Align,
-                    Align.GetStringValue(attrs.Align), "text-align");
+                    AlignConverter.GetStringValue(attrs.Align), "text-align");
                 convert(iss.Direction ?? DEFAULT_INLINE_STYLES.Direction,
-                    Direction.GetStringValue(attrs.Direction), "direction");
+                    DirectionConverter.GetStringValue(attrs.Direction), "direction");
                 convert(iss.Font ?? DEFAULT_INLINE_STYLES.Font,
                     attrs.Font, "font-family");
                 convert(iss.Size ?? DEFAULT_INLINE_STYLES.Size,
@@ -337,7 +334,7 @@ namespace Quill.Delta
             }
             if (attrs.Script.HasValue)
             {
-                result.Add(attrs.Script.Value == ScriptType.Sub ? "sub" : "sup");
+                result.Add(ScriptConverter.GetTag(attrs.Script.Value));
             }
             if (attrs.Bold == true)
             {

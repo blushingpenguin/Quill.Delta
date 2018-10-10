@@ -179,6 +179,18 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void SeparateParagraphsEndWithNL()
+        {
+            var ops4 = JArray.Parse(@"[
+                { insert: ""hello\nhow areyou?\n\nbye\n\n\n"" }
+            ]");
+            var qdc = new XmlConverter(ops4,
+                new XmlConverterOptions { MultiLineParagraph = false });
+            var xml = qdc.Convert().OuterXml;
+            xml.Should().Be("<template><p>hello</p><p>how areyou?</p><p><br /></p><p>bye</p><p><br /></p><p><br /></p></template>");
+        }
+
+        [Test]
         public void CheckedAndUncheckedLists()
         {
             var ops4 = JArray.Parse(@"[
@@ -584,6 +596,30 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void RenderInlinesWithNoOpsNoMultilineParagraph()
+        {
+            var ops = new DeltaInsertOp[] { };
+            var qdc = new XmlConverter(new JArray(),
+                new XmlConverterOptions { MultiLineParagraph = false });
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops, true).OuterXml;
+            xml.Should().Be("<p />");
+        }
+
+        [Test]
+        public void RenderInlinesWith1OpNoMultilineParagraph()
+        {
+            var ops = new DeltaInsertOp[] {
+                new DeltaInsertOp("thing")
+            };
+            var qdc = new XmlConverter(new JArray(),
+                new XmlConverterOptions { MultiLineParagraph = false });
+            qdc._document = new XmlDocument();
+            var xml = qdc.RenderInlines(ops, true).OuterXml;
+            xml.Should().Be("<p>thing</p>");
+        }
+
+        [Test]
         public void RenderBlockString()
         {
             var op = new DeltaInsertOp("\n",
@@ -818,6 +854,51 @@ namespace Quill.Delta.Test
                 { AfterRenderer = (doc, gt, g) => null });
             xml = qdc.Convert().OuterXml;
             xml.Should().Be("<template />");
+        }
+
+        [Test]
+        public void RenderListEmptyChildren()
+        {
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var node = qdc.RenderList(new ListGroup(new ListItem[] {
+                new ListItem(new BlockGroup(DeltaInsertOp.CreateNewLineOp(), new DeltaInsertOp[]{ }))
+            }));
+            node.OuterXml.Should().Be("");
+        }
+
+        [Test]
+        public void RenderListEmptyInnerlist()
+        {
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var emptyList = new ListGroup(new ListItem[] {
+                new ListItem(new BlockGroup(DeltaInsertOp.CreateNewLineOp(), new DeltaInsertOp[]{ }))
+            });
+            var node = qdc.RenderList(new ListGroup(new ListItem[] {
+                new ListItem(new BlockGroup(new DeltaInsertOp("thing"), new DeltaInsertOp[]{ }),
+                emptyList) 
+            }));
+            node.OuterXml.Should().Be("<p />");
+        }
+
+        [Test]
+        public void RenderInlineMultilineText()
+        {
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var node = qdc.RenderInline(new DeltaInsertOp("flargh\nflargh\nflargh\n\n"), null);
+            node.OuterXml.Should().Be("flargh<br />flargh<br />flargh<br /><br />");
+        }
+
+        [Test]
+        public void RenderInlineWrappedMultilineText()
+        {
+            var qdc = new XmlConverter(new JArray());
+            qdc._document = new XmlDocument();
+            var node = qdc.RenderInline(new DeltaInsertOp("flargh\nflargh\nflargh\n\n",
+                new OpAttributes { Italic = true }), null);
+            node.OuterXml.Should().Be("<em>flargh<br />flargh<br />flargh<br /><br /></em>");
         }
     }
 }

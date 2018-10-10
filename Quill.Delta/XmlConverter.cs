@@ -93,7 +93,7 @@ namespace Quill.Delta
             return node;
         }
 
-        XmlNode RenderList(ListGroup list)
+        internal XmlNode RenderList(ListGroup list)
         {
             var firstItem = list.Items[0];
             var node = XmlHelpers.MakeElement(_document, GetListTag(firstItem.Item.Op)) ??
@@ -109,7 +109,7 @@ namespace Quill.Delta
             return node;
         }
 
-        XmlNode RenderListItem(ListItem li)
+        internal XmlNode RenderListItem(ListItem li)
         {
             //if (!isOuterMost) {
             li.Item.Op.Attributes.Indent = 0;
@@ -123,11 +123,7 @@ namespace Quill.Delta
             }
             if (li.InnerList != null)
             {
-                var innerList = RenderList(li.InnerList);
-                if (innerList != null)
-                {
-                    parts.InnerNode.AppendChild(innerList);
-                }
+                parts.InnerNode.AppendChild(RenderList(li.InnerList));
             }
             return parts.OuterNode;
         }
@@ -197,14 +193,14 @@ namespace Quill.Delta
             }
 
             // split any lines off into separate paragraph tags
+            // each <br/> tag makes one paragraph, empty paragraphs get br tags added
             var ps = _document.CreateDocumentFragment();
             ps.AppendChild(p);
             var inline = inlines.FirstChild;
             while (inline != null)
             {
                 var nextInline = inline.NextSibling;
-                if (inline is XmlElement el && el.Name == "br" &&
-                    nextInline != null)
+                if (inline is XmlElement el && el.Name == "br")
                 {
                     if (p.ChildNodes.Count == 0)
                     {
@@ -219,18 +215,15 @@ namespace Quill.Delta
                 }
                 inline = nextInline;
             }
+            if (p.ChildNodes.Count == 0)
+            {
+                p.AppendChild(_document.CreateElement("br"));
+            }
 
             return ps;
         }
 
-        XmlNode TextNodeOrBr(string text)
-        {
-            return String.IsNullOrEmpty(text) ?
-                (XmlNode)_document.CreateElement("br") :
-                _document.CreateTextNode(text);
-        }
-
-        XmlNode RenderInline(DeltaInsertOp op, DeltaInsertOp contextOp)
+        internal XmlNode RenderInline(DeltaInsertOp op, DeltaInsertOp contextOp)
         {
             if (op.IsCustom())
             {

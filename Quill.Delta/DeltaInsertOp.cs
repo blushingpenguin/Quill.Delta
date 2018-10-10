@@ -16,7 +16,7 @@ namespace Quill.Delta
             Attributes = attributes ?? new OpAttributes();
         }
 
-        public DeltaInsertOp(string insert, OpAttributes attributes = null) :
+        public DeltaInsertOp(string insert = null, OpAttributes attributes = null) :
             this(new InsertDataText(insert ?? ""), attributes)
         {
         }

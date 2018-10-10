@@ -59,33 +59,11 @@ namespace Quill.Delta
                 cleanAttrs.Target = target;
             }
 
-            var script = dirtyAttrs.GetStringValue("script");
-            if (script == "sub")
-            {
-                cleanAttrs.Script = ScriptType.Sub;
-            }
-            else if (script == "super")
-            {
-                cleanAttrs.Script = ScriptType.Super;
-            }
+            cleanAttrs.Script = ScriptConverter.GetEnumValue(
+                dirtyAttrs.GetStringValue("script"));
 
-            var list = dirtyAttrs.GetStringValue("list");
-            if (list == "ordered")
-            {
-                cleanAttrs.List = ListType.Ordered;
-            }
-            else if (list == "bullet")
-            {
-                cleanAttrs.List = ListType.Bullet;
-            }
-            else if (list == "checked")
-            {
-                cleanAttrs.List = ListType.Checked;
-            }
-            else if (list == "unchecked")
-            {
-                cleanAttrs.List = ListType.Unchecked;
-            }
+            cleanAttrs.List = ListConverter.GetEnumValue(
+                dirtyAttrs.GetStringValue("list"));
 
             var header = dirtyAttrs.GetIntValue("header");
             if (header.HasValue && header.Value > 0)
@@ -93,25 +71,11 @@ namespace Quill.Delta
                 cleanAttrs.Header = Math.Min(header.Value, 6);
             }
 
-            var align = dirtyAttrs.GetStringValue("align");
-            if (align == "center")
-            {
-                cleanAttrs.Align = AlignType.Center;
-            }
-            else if (align == "right")
-            {
-                cleanAttrs.Align = AlignType.Right;
-            }
-            else if (align == "justify")
-            {
-                cleanAttrs.Align = AlignType.Justify;
-            }
+            cleanAttrs.Align = AlignConverter.GetEnumValue(
+                dirtyAttrs.GetStringValue("align"));
 
-            var direction = dirtyAttrs.GetStringValue("direction");
-            if (direction == "rtl")
-            {
-                cleanAttrs.Direction = DirectionType.Rtl;
-            }
+            cleanAttrs.Direction = DirectionConverter.GetEnumValue(
+                dirtyAttrs.GetStringValue("direction"));
 
             var indent = dirtyAttrs.GetIntValue("indent");
             if (indent.HasValue)

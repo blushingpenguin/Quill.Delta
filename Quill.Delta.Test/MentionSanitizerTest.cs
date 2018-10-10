@@ -30,6 +30,14 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void SanitizeNullObject()
+        {
+            var result = MentionSanitizer.Sanitize(null);
+            result.Should().BeEquivalentTo(new Mention(),
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
         public void SanitizeEmptyObject()
         {
             var result = MentionSanitizer.Sanitize(new JObject());

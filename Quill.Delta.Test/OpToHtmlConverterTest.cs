@@ -15,6 +15,27 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void ConstructorSetsDefaultOptions()
+        {
+            var op = new DeltaInsertOp("hello");
+            var converter = new OpToHtmlConverter(op);
+            converter.Options.Should().BeEquivalentTo(new OpToHtmlConverterOptions(),
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
+        public void PrefixClassWithNullPrefix()
+        {
+            var op = new DeltaInsertOp("aa");
+            var c = new OpToHtmlConverter(op, new OpToHtmlConverterOptions
+            {
+                ClassPrefix = null
+            });
+            var act = c.PrefixClass("my-class");
+            act.Should().Be("my-class");
+        }
+
+        [Test]
         public void PrefixClassWithEmptyPrefix()
         {
             var op = new DeltaInsertOp("aa");
@@ -45,6 +66,30 @@ namespace Quill.Delta.Test
             var c = new OpToHtmlConverter(op);
             var act = c.PrefixClass("my-class");
             act.Should().Be("ql-my-class");
+        }
+
+        [Test]
+        public void PrefixClassWithNullClass()
+        {
+            var op = new DeltaInsertOp("aa");
+            var c = new OpToHtmlConverter(op, new OpToHtmlConverterOptions
+            {
+                ClassPrefix = "xx"
+            });
+            var act = c.PrefixClass(null);
+            act.Should().Be("xx-");
+        }
+
+        [Test]
+        public void PrefixClassWithNullAndNullPrefix()
+        {
+            var op = new DeltaInsertOp("aa");
+            var c = new OpToHtmlConverter(op, new OpToHtmlConverterOptions
+            {
+                ClassPrefix = null
+            });
+            var act = c.PrefixClass(null);
+            act.Should().BeEmpty();
         }
 
         [Test]
@@ -85,6 +130,35 @@ namespace Quill.Delta.Test
             var o = new DeltaInsertOp("f", new OpAttributes
             {
                 Background = "red",
+                Color = "blue"
+            });
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions()
+            {
+                AllowBackgroundClasses = true
+            });
+            c.GetCssStyles().Should().Equal(new string[] { "color:blue" });
+        }
+        
+        [Test]
+        public void GetCssStylesAllowBackgroundClassesInvalidColor()
+        {
+            var o = new DeltaInsertOp("f", new OpAttributes
+            {
+                Background = "012345678901234567890123456789012345678901234567890123456789",
+                Color = "blue"
+            });
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions()
+            {
+                AllowBackgroundClasses = true
+            });
+            c.GetCssStyles().Should().Equal(new string[] { "color:blue" });
+        }
+
+        [Test]
+        public void GetCssStylesAllowBackgroundClassesNoBackground()
+        {
+            var o = new DeltaInsertOp("f", new OpAttributes
+            {
                 Color = "blue"
             });
             var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions()
@@ -276,6 +350,64 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void GetCssStylesWithCustomStylesNoneSet()
+        {
+            var o = new DeltaInsertOp("f", new OpAttributes());
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions
+            {
+                InlineStyles = new InlineStyles()
+            });
+            c.GetCssStyles().Should().BeEquivalentTo(new string[0]);
+        }
+
+        [Test]
+        public void GetCssStylesWithCustomStylesAllSet()
+        {
+            var o = new DeltaInsertOp("f", new OpAttributes());
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions
+            {
+                InlineStyles = new InlineStyles
+                {
+                    Align = (value, op) => "text-align: center",
+                    Background = (value, op) => "background: red",
+                    Color = (value, op) => "color: blue",
+                    Direction = (value, op) => "direction: rtl",
+                    Font = (value, op) => "font-family: roboto",
+                    Indent = (value, op) => "padding-left: 30px",
+                    Size = (value, op) => "font-size: 50em"
+                }
+            });
+            c.GetCssStyles().Should().BeEquivalentTo(new string[0]);
+        }
+
+        [Test]
+        public void GetCssStylesWithIdent()
+        {
+            var o = new DeltaInsertOp("f",
+                new OpAttributes { Indent = 30 });
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions
+            {
+                InlineStyles = new InlineStyles()
+            });
+            c.GetCssStyles().Should().Equal(new[] { "padding-left:90em" });
+        }
+
+        [Test]
+        public void GetCssStylesWithIdentStyle()
+        {
+            var o = new DeltaInsertOp("f",
+                new OpAttributes { Indent = 30 });
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions
+            {
+                InlineStyles = new InlineStyles
+                {
+                    Indent = (value, op) => "padding-left: 100px",
+                }
+            });
+            c.GetCssStyles().Should().Equal(new[] { "padding-left: 100px" });
+        }
+
+        [Test]
         public void GetCssClassesReturnsEmptyArrayWithNoClasses()
         {
             var op = new DeltaInsertOp("hello");
@@ -331,6 +463,32 @@ namespace Quill.Delta.Test
             });
             c.GetCssClasses().Should().BeEquivalentTo(_styleClasses.Concat(
                 Enumerable.Repeat("ql-background-red", 1)));
+        }
+
+        [Test]
+        public void GetCssClassesAllowBackgroundClassesInvalidColor()
+        {
+            var o = new DeltaInsertOp("f", new OpAttributes
+            {
+                Background = "012345678901234567890123456789012345678901234567890123456789",
+                Color = "blue"
+            });
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions()
+            {
+                AllowBackgroundClasses = true
+            });
+            c.GetCssClasses().Should().BeEquivalentTo(new string[0]);
+        }
+
+        [Test]
+        public void GetCssClassesAllowBackgroundClassesNoBackground()
+        {
+            var o = new DeltaInsertOp("f", new OpAttributes());
+            var c = new OpToHtmlConverter(o, new OpToHtmlConverterOptions()
+            {
+                AllowBackgroundClasses = true
+            });
+            c.GetCssClasses().Should().BeEquivalentTo(new string[0]);
         }
 
         [Test]
@@ -496,6 +654,19 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void GetTagAttributesImageNullSrc()
+        {
+            var o = new DeltaInsertOp(new InsertDataImage(null),
+                new OpAttributes { Width = "200" });
+            var c = new OpToHtmlConverter(o);
+            c.GetTagAttributes().Should().BeEquivalentTo(new TagKeyValue[] {
+                new TagKeyValue("class", "ql-image"),
+                new TagKeyValue("width", "200"),
+                new TagKeyValue("src", "unsafe:")
+            });
+        }
+
+        [Test]
         public void GetTagAttributesFormulaIgnoresColour()
         {
             var o = new DeltaInsertOp(new InsertDataFormula("-"),
@@ -517,6 +688,19 @@ namespace Quill.Delta.Test
                 new TagKeyValue("frameborder", "0"),
                 new TagKeyValue("allowfullscreen", "true"),
                 new TagKeyValue("src", "http:")
+            });
+        }
+
+        [Test]
+        public void GetTagAttributesVideoNullSource()
+        {
+            var o = new DeltaInsertOp(new InsertDataVideo(null));
+            var c = new OpToHtmlConverter(o);
+            c.GetTagAttributes().Should().BeEquivalentTo(new TagKeyValue[] {
+                new TagKeyValue("class", "ql-video"),
+                new TagKeyValue("frameborder", "0"),
+                new TagKeyValue("allowfullscreen", "true"),
+                new TagKeyValue("src", "unsafe:")
             });
         }
 
@@ -667,6 +851,24 @@ namespace Quill.Delta.Test
         public void IsValidRel(string test, bool result)
         {
             OpToHtmlConverter.IsValidRel(test).Should().Be(result);
+        }
+
+        [Test]
+        public void TestEncodeContentEncodes()
+        {
+            var op = new DeltaInsertOp("&");
+            var converter = new OpToHtmlConverter(op,
+                new OpToHtmlConverterOptions() { EncodeHtml = true });
+            converter.GetContent().Should().Be("&amp;");
+        }
+
+        [Test]
+        public void TestEncodeContentSkipsEncoding()
+        {
+            var op = new DeltaInsertOp("&");
+            var converter = new OpToHtmlConverter(op,
+                new OpToHtmlConverterOptions() { EncodeHtml = false });
+            converter.GetContent().Should().Be("&");
         }
     }
 }

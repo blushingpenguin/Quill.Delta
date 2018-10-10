@@ -33,6 +33,26 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void ConstructorWithNoArgs()
+        {
+            var t = new DeltaInsertOp();
+            t.Insert.Should().BeOfType<InsertDataText>();
+            var idt = (InsertDataText)t.Insert;
+            idt.Value.Should().Be("");
+        }
+
+        [Test]
+        public void ConstructorWithAttributes()
+        {
+            var t = new DeltaInsertOp(attributes: new OpAttributes { Bold = true });
+            t.Insert.Should().BeOfType<InsertDataText>();
+            var idt = (InsertDataText)t.Insert;
+            idt.Value.Should().Be("");
+            t.Attributes.Should().BeEquivalentTo(new OpAttributes { Bold = true },
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
         public void IsContainerBlock()
         {
             var op = new DeltaInsertOp("test");
@@ -128,7 +148,7 @@ namespace Quill.Delta.Test
         [Test]
         public void IsCheckedList()
         {
-            var op = new DeltaInsertOp("\n", new OpAttributes() { 
+            var op = new DeltaInsertOp("\n", new OpAttributes() {
                 List = ListType.Unchecked });
             op.IsCheckedList().Should().BeFalse();
 
@@ -203,6 +223,34 @@ namespace Quill.Delta.Test
 
             op = new DeltaInsertOp("http", new OpAttributes() { Link = "http://" });
             op.IsLink().Should().BeTrue();
+        }
+
+        [Test]
+        public void IsSameHeaderAsDifferentN()
+        {
+            var op1 = new DeltaInsertOp("",
+                new OpAttributes() { Header = 1 });
+            var op2 = new DeltaInsertOp("",
+                new OpAttributes() { Header = 2 });
+            op1.IsSameHeaderAs(op2).Should().BeFalse();
+        }
+
+        [Test]
+        public void IsSameHeaderAsSameN()
+        {
+            var op1 = new DeltaInsertOp("",
+                new OpAttributes() { Header = 1 });
+            var op2 = new DeltaInsertOp("",
+                new OpAttributes() { Header = 1 });
+            op1.IsSameHeaderAs(op2).Should().BeTrue();
+        }
+
+        [Test]
+        public void IsSameHeaderAsNotHeaders()
+        {
+            var op1 = new DeltaInsertOp("", new OpAttributes());
+            var op2 = new DeltaInsertOp("", new OpAttributes());
+            op1.IsSameHeaderAs(op2).Should().BeFalse();
         }
     }
 }

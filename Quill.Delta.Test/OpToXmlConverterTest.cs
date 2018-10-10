@@ -16,6 +16,15 @@ namespace Quill.Delta.Test
         }
 
         [Test]
+        public void ConstructorSetsDefaultOptions()
+        {
+            var op = new DeltaInsertOp("hello");
+            var converter = new OpToXmlConverter(op);
+            converter.Options.Should().BeEquivalentTo(new OpToXmlConverterOptions(),
+                opts => opts.RespectingRuntimeTypes().WithStrictOrdering());
+        }
+
+        [Test]
         public void PrefixClassWithEmptyPrefix()
         {
             var op = new DeltaInsertOp("aa");
@@ -653,6 +662,17 @@ namespace Quill.Delta.Test
             var doc = new XmlDocument();
             c1.GetXml(doc).OuterXml.Should().Be(
                 "<img class=\"ql-image\" src=\"http://\"></img>");
+        }
+
+        [Test]
+        public void GetXmlWithNullInputString()
+        {
+            var op = new DeltaInsertOp(
+                new InsertDataText(null),
+                new OpAttributes { Bold = true });
+            var converter = new OpToXmlConverter(op);
+            var doc = new XmlDocument();
+            converter.GetXml(doc).OuterXml.Should().Be("<strong></strong>");
         }
     }
 }
