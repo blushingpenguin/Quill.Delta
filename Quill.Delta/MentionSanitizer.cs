@@ -71,7 +71,7 @@ namespace Quill.Delta
         }
 
         readonly static HashSet<string> validTargets =
-            new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "_self", "_blank", "_parent", "_top"
             };
