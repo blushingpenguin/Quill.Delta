@@ -101,7 +101,7 @@ Following shows the parameter formats for `beforeRender` event:
 {
     insert: {
         type: '', // one of 'text' | 'image' | 'video' | 'formula',
-        value: '' // some string value  
+        value: '' // some string value
     },
     attributes: {
         // ... quill delta attributes
@@ -195,7 +195,7 @@ string html = converter.Convert();
 {
     insert: {
         type: string // whatever you specified as key for insert, in above example: 'my-blot'
-        value: any // value for the custom blot  
+        value: any // value for the custom blot
     },
     attributes: {
         // ... any attributes custom blot may have
@@ -236,5 +236,5 @@ Hacking on `Quill.Delta` is easy! To quickly get started clone the repo:
     $ cd Quill.Delta
 
 To compile the code and run the tests just open the solution in
-Visual Studio 2017 Community Edition.  To generate a code coverage report
+Visual Studio 2017 Community Edition. To generate a code coverage report
 run cover.bat from the solution directory.
